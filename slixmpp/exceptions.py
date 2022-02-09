@@ -35,11 +35,14 @@ class XMPPError(Exception):
     :param clear: Indicates if the stanza's contents should be
                   removed before replying with an error.
                   Defaults to ``True``.
+    :param silent: Indicates if the stanza's error should be silenced and
+                  do not send an error to the XMPP server.
+                  Defaults to ``False``.
     """
 
     def __init__(self, condition='undefined-condition', text='',
                 etype='cancel', extension=None, extension_ns=None,
-                extension_args=None, clear=True):
+                extension_args=None, clear=True, silent=False):
         if extension_args is None:
             extension_args = {}
 
@@ -47,6 +50,7 @@ class XMPPError(Exception):
         self.text = text
         self.etype = etype
         self.clear = clear
+        self.silent = silent
         self.extension = extension
         self.extension_ns = extension_ns
         self.extension_args = extension_args
@@ -71,10 +75,11 @@ class IqTimeout(XMPPError):
     received within the alloted time window.
     """
 
-    def __init__(self, iq):
+    def __init__(self, iq, silent=False):
         super().__init__(
                 condition='remote-server-timeout',
-                etype='cancel')
+                etype='cancel',
+                silent=silent)
 
         #: The :class:`~slixmpp.stanza.iq.Iq` stanza whose response
         #: did not arrive before the timeout expired.
@@ -88,11 +93,12 @@ class IqError(XMPPError):
     after making a blocking send call.
     """
 
-    def __init__(self, iq):
+    def __init__(self, iq, silent=False):
         super().__init__(
                 condition=iq['error']['condition'],
                 text=iq['error']['text'],
-                etype=iq['error']['type'])
+                etype=iq['error']['type'],
+                silent=silent)
 
         #: The :class:`~slixmpp.stanza.iq.Iq` error result stanza.
         self.iq = iq
@@ -103,10 +109,11 @@ class PresenceError(XMPPError):
     An exception raised in specific circumstances for presences
     of type 'error' received.
     """
-    def __init__(self, pres):
+    def __init__(self, pres, silent=False):
         super().__init__(
             condition=pres['error']['condition'],
             text=pres['error']['text'],
             etype=pres['error']['type'],
+            silent=silent
         )
         self.presence = pres

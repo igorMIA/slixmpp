@@ -27,7 +27,7 @@ class RootStanza(StanzaBase):
 
     def exception(self, e):
         """
-        Create and send an error reply.
+        Create and send an error reply if stanza is not silent.
 
         Typically called when an event handler raises an exception.
         The error's type and text content are based on the exception
@@ -38,6 +38,9 @@ class RootStanza(StanzaBase):
         Arguments:
             e -- Exception object
         """
+        if getattr(e, 'silent', False):
+            log.warning('Stanza exception was silenced')
+            return
         if isinstance(e, IqError):
             # We received an Iq error reply, but it wasn't caught
             # locally. Using the condition/text from that error

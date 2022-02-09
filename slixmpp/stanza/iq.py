@@ -149,7 +149,7 @@ class Iq(RootStanza):
         new_iq['type'] = 'result'
         return new_iq
 
-    def send(self, callback=None, timeout=None, timeout_callback=None):
+    def send(self, callback=None, timeout=None, timeout_callback=None, silence_error=False):
         """Send an <iq> stanza over the XML stream.
 
         A callback handler can be provided that will be executed when the Iq
@@ -171,6 +171,7 @@ class Iq(RootStanza):
                                           timeout expires before a response has
                                           been received for the originally-sent
                                           IQ stanza.
+        :param bool silence_error: Flag indicating whether to send an error response to XMPP server.
         :rtype: asyncio.Future
         """
         if self.stream.session_bind_event.is_set():
@@ -195,7 +196,7 @@ class Iq(RootStanza):
                     future.set_result(result)
             elif type_ == 'error':
                 if not future.done():
-                    future.set_exception(IqError(result))
+                    future.set_exception(IqError(result, silent=silence_error))
             else:
                 # Most likely an iq addressed to ourself, rearm the callback.
                 handler = constr(handler_name,
@@ -212,7 +213,7 @@ class Iq(RootStanza):
 
         def callback_timeout():
             if not future.done():
-                future.set_exception(IqTimeout(self))
+                future.set_exception(IqTimeout(self, silent=silence_error))
             self.stream.remove_handler('IqCallback_%s' % self['id'])
             if timeout_callback is not None:
                 timeout_callback(self)
